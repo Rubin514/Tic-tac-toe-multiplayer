@@ -1,5 +1,5 @@
 {
-  "name": "online-tic-tac-toe",
+  "name": "neon-ghost-tic-tac-toe",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
