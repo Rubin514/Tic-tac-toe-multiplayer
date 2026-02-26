@@ -9,8 +9,8 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store room settings
-const roomData = {};
+// Stores which mode (Classic/Ghost) each room is using
+const roomSettings = {};
 
 io.on('connection', (socket) => {
     let currentRoom = null;
@@ -24,17 +24,17 @@ io.on('connection', (socket) => {
             socket.join(roomID);
             currentRoom = roomID;
 
-            // If it's a new room, set the mode. If joining, get the mode.
+            // If first player, set the room mode. If second, inherit it.
             if (numClients === 0) {
-                roomData[roomID] = mode;
+                roomSettings[roomID] = mode;
             }
             
             const role = numClients === 0 ? "X" : "O";
             socket.emit('joined', { 
-                roomID, 
-                role, 
-                mode: roomData[roomID] 
+                role: role, 
+                mode: roomSettings[roomID] 
             });
+            console.log(`User joined ${roomID} as ${role} in ${roomSettings[roomID]} mode`);
         } else {
             socket.emit('error', 'Room is full!');
         }
@@ -51,7 +51,14 @@ io.on('connection', (socket) => {
     socket.on('signal', (data) => {
         if (currentRoom) socket.to(currentRoom).emit('signal', data);
     });
+
+    socket.on('disconnect', () => {
+        // Cleanup room settings if room is empty
+        if (currentRoom && !io.sockets.adapter.rooms.get(currentRoom)) {
+            delete roomSettings[currentRoom];
+        }
+    });
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Neon Ghost Server active on port ${PORT}`));
