@@ -15,31 +15,26 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', (roomID) => {
         socket.join(roomID);
         currentRoom = roomID;
-        console.log(`User ${socket.id} joined room: ${roomID}`);
         socket.emit('joined', roomID);
     });
 
-    // Handle game moves
     socket.on('move', (data) => {
-        if (currentRoom) {
-            socket.to(currentRoom).emit('move', data);
-        }
+        if (currentRoom) socket.to(currentRoom).emit('move', data);
     });
 
-    // Handle chat messages
     socket.on('chatMessage', (msg) => {
-        if (currentRoom) {
-            socket.to(currentRoom).emit('chatMessage', msg);
-        }
+        if (currentRoom) socket.to(currentRoom).emit('chatMessage', msg);
     });
 
-    // Handle restart
+    // WebRTC Signaling for Voice
+    socket.on('signal', (data) => {
+        if (currentRoom) socket.to(currentRoom).emit('signal', data);
+    });
+
     socket.on('restart', () => {
-        if (currentRoom) {
-            socket.to(currentRoom).emit('restart');
-        }
+        if (currentRoom) socket.to(currentRoom).emit('restart');
     });
 });
 
-const PORT = process.env.PORT || 10000; // Render uses port 10000 by default
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
