@@ -3,229 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Tic Tac Toe + Smart Bot</title>
+    <title>Neon Ghost Tic-Tac-Toe</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --primary: #38bdf8; --bg: #0f172a; --card: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-        .lobby, .game-area { width: 100%; max-width: 400px; background: var(--card); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .board { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 10px; justify-content: center; margin: 20px 0; }
-        .cell { width: 100px; height: 100px; background: #334155; border-radius: 10px; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; height: 100px; }
-        .cell:hover { background: #475569; }
-        input { padding: 12px; border-radius: 8px; border: none; width: 70%; margin-bottom: 15px; background: #334155; color: white; }
-        button { padding: 12px 24px; border-radius: 8px; border: none; background: var(--primary); color: var(--bg); font-weight: bold; cursor: pointer; margin: 5px; }
-        #chat { height: 100px; overflow-y: auto; background: #0f172a; padding: 10px; margin: 15px 0; border-radius: 8px; text-align: left; font-size: 0.8rem; }
-        .bot-btn { background: #a855f7; color: white; }
+        :root { --blue: #00d4ff; --pink: #ff007f; --glass: rgba(255, 255, 255, 0.1); --bg: #050b18; }
+        body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at center, #1a1a2e, #050b18); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; overflow-x: hidden; }
+        .glass-panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8); width: 100%; max-width: 400px; text-align: center; }
+        
+        /* Menu Styles */
+        .mode-select { display: flex; gap: 10px; margin-bottom: 20px; }
+        .mode-btn { flex: 1; padding: 10px; border: 1px solid var(--blue); border-radius: 8px; background: transparent; color: white; cursor: pointer; font-size: 0.8rem; }
+        .mode-btn.active { background: var(--blue); color: var(--bg); font-weight: bold; }
+
+        /* Board Styles */
+        .board { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 15px; margin: 20px auto; }
+        .cell { width: 100px; height: 100px; background: rgba(255,255,255,0.05); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+        .cell.x-move { color: var(--blue); text-shadow: 0 0 15px var(--blue); }
+        .cell.o-move { color: var(--pink); text-shadow: 0 0 15px var(--pink); }
+        .ghost { opacity: 0.3; filter: blur(1px); }
+
+        input { background: rgba(0,0,0,0.3); border: 1px solid var(--glass); padding: 12px; border-radius: 10px; color: white; width: calc(100% - 30px); margin-bottom: 15px; }
+        button#joinBtn { background: linear-gradient(45deg, var(--blue), #005f73); border: none; padding: 15px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; width: 100%; }
+        #chat { height: 80px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; margin-bottom: 10px; font-size: 0.8rem; text-align: left; }
     </style>
 </head>
 <body>
 
-    <h1>Tic Tac Toe 🤖</h1>
+    <h1 style="text-shadow: 0 0 10px var(--blue);">NEON GHOST</h1>
 
-    <div class="lobby" id="lobby">
-        <input type="text" id="roomInput" placeholder="Enter Room Code...">
-        <br>
-        <button onclick="joinRoom()">Join Multiplayer</button>
-        <button class="bot-btn" onclick="startBotGame()">Play vs AI (Offline)</button>
+    <div class="glass-panel" id="lobby">
+        <p>1. Select Game Mode</p>
+        <div class="mode-select">
+            <button class="mode-btn active" id="btn-classic" onclick="setMode('classic')">CLASSIC<br><small>Normal Rules</small></button>
+            <button class="mode-btn" id="btn-ghost" onclick="setMode('ghost')">NEON GHOST<br><small>Infinite Fading</small></button>
+        </div>
+        <p>2. Enter Room Code</p>
+        <input type="text" id="roomInput" placeholder="Ex: ROOM123">
+        <button id="joinBtn" onclick="joinRoom()">START GAME</button>
     </div>
 
-    <div class="game-area" id="gameArea" style="display:none;">
-        <div id="status" style="color: var(--primary); margin-bottom: 10px;">Waiting...</div>
+    <div class="glass-panel" id="gameArea" style="display:none;">
+        <div id="gameInfo" style="font-size: 0.8rem; color: var(--blue); margin-bottom: 5px;"></div>
+        <div id="status" style="font-size: 1.2rem; margin-bottom: 10px;">Waiting...</div>
         
         <div class="board" id="board">
-            <div class="cell" onclick="handleInput(0)"></div>
-            <div class="cell" onclick="handleInput(1)"></div>
-            <div class="cell" onclick="handleInput(2)"></div>
-            <div class="cell" onclick="handleInput(3)"></div>
-            <div class="cell" onclick="handleInput(4)"></div>
-            <div class="cell" onclick="handleInput(5)"></div>
-            <div class="cell" onclick="handleInput(6)"></div>
-            <div class="cell" onclick="handleInput(7)"></div>
-            <div class="cell" onclick="handleInput(8)"></div>
+            <div class="cell" onclick="makeMove(0)"></div>
+            <div class="cell" onclick="makeMove(1)"></div>
+            <div class="cell" onclick="makeMove(2)"></div>
+            <div class="cell" onclick="makeMove(3)"></div>
+            <div class="cell" onclick="makeMove(4)"></div>
+            <div class="cell" onclick="makeMove(5)"></div>
+            <div class="cell" onclick="makeMove(6)"></div>
+            <div class="cell" onclick="makeMove(7)"></div>
+            <div class="cell" onclick="makeMove(8)"></div>
         </div>
 
-        <div id="multiplayerExtras">
-            <div id="chat"></div>
-            <input type="text" id="chatInput" placeholder="Chat..." style="width: 50%;">
-            <button onclick="sendChat()" style="padding: 10px;">Send</button>
-            <div style="margin-top: 15px;">
-                <button id="micBtn" onclick="initVoice()" style="background: #22c55e; color: white;">Voice Chat</button>
-                <audio id="remoteAudio" autoplay></audio>
-            </div>
+        <div id="chat"></div>
+        <div style="display:flex; gap: 5px;">
+            <input type="text" id="chatInput" placeholder="Message..." style="margin-bottom:0; flex:1;">
+            <button onclick="sendChat()" style="background:var(--blue); color:black; padding:0 15px; border-radius:10px;">></button>
         </div>
-        
-        <button onclick="location.reload()" style="margin-top:20px; background:#64748b;">Exit to Lobby</button>
+
+        <div style="margin-top:20px;">
+            <button id="micBtn" onclick="setupVoice()" style="background:#22c55e; width:100%;">🎙️ VOICE CHAT</button>
+            <audio id="remoteAudio" autoplay></audio>
+        </div>
     </div>
 
     <script>
         const socket = io();
-        let myTurn = false;
-        let mySymbol = "X";
-        let botSymbol = "O";
-        let isBotMode = false;
-        let gameActive = true;
+        let myTurn = false, mySymbol = "", gameMode = "classic", gameActive = true;
+        let xMoves = [], oMoves = [], pc;
         const cells = document.querySelectorAll('.cell');
 
-        // LOBBY LOGIC
+        function setMode(m) {
+            gameMode = m;
+            document.getElementById('btn-classic').classList.toggle('active', m === 'classic');
+            document.getElementById('btn-ghost').classList.toggle('active', m === 'ghost');
+        }
+
         function joinRoom() {
             const room = document.getElementById('roomInput').value;
-            if (room) socket.emit('joinRoom', room);
+            if (room) socket.emit('joinRoom', { roomID: room, mode: gameMode });
         }
 
-        function startBotGame() {
-            isBotMode = true;
+        socket.on('joined', (data) => {
+            mySymbol = data.role;
+            gameMode = data.mode;
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
-            document.getElementById('multiplayerExtras').style.display = 'none';
-            myTurn = true;
-            document.getElementById('status').innerText = "Playing vs AI. Your turn!";
-        }
-
-        socket.on('joined', () => {
-            document.getElementById('lobby').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            myTurn = true;
-            document.getElementById('status').innerText = "Multiplayer: Your turn!";
+            document.getElementById('gameInfo').innerText = `MODE: ${gameMode.toUpperCase()}`;
+            myTurn = (mySymbol === "X");
+            updateStatus();
         });
 
-        // INPUT HANDLING
-        function handleInput(i) {
-            if (!gameActive || cells[i].innerText !== "" || !myTurn) return;
-
-            // Player Move
-            executeMove(i, mySymbol);
-
-            if (isBotMode) {
-                if (checkWin(mySymbol)) return;
-                myTurn = false;
-                document.getElementById('status').innerText = "AI is thinking...";
-                setTimeout(botMove, 600); // Small delay to feel real
-            } else {
+        function makeMove(i) {
+            if (cells[i].innerText === "" && myTurn && gameActive) {
+                applyLogic(i, mySymbol);
                 socket.emit('move', { index: i, symbol: mySymbol });
                 myTurn = false;
-                checkWin(mySymbol);
+                updateStatus();
+                checkWin();
             }
-        }
-
-        function executeMove(i, symbol) {
-            cells[i].innerText = symbol;
-            cells[i].style.color = symbol === "X" ? "#38bdf8" : "#fb7185";
         }
 
         socket.on('move', (data) => {
-            executeMove(data.index, data.symbol);
+            applyLogic(data.index, data.symbol);
             myTurn = true;
-            document.getElementById('status').innerText = "Your turn!";
-            checkWin(data.symbol);
+            updateStatus();
+            checkWin();
         });
 
-        // SMART BOT LOGIC (Minimax)
-        function botMove() {
-            let bestScore = -Infinity;
-            let move;
-            for (let i = 0; i < 9; i++) {
-                if (cells[i].innerText === "") {
-                    cells[i].innerText = botSymbol;
-                    let score = minimax(cells, 0, false);
-                    cells[i].innerText = "";
-                    if (score > bestScore) {
-                        bestScore = score;
-                        move = i;
-                    }
+        function applyLogic(idx, sym) {
+            if (gameMode === 'ghost') {
+                const q = (sym === "X") ? xMoves : oMoves;
+                if (q.length === 3) {
+                    const old = q.shift();
+                    cells[old].innerText = "";
+                    cells[old].className = "cell";
                 }
-            }
-            executeMove(move, botSymbol);
-            if (!checkWin(botSymbol)) {
-                myTurn = true;
-                document.getElementById('status').innerText = "Your turn!";
-            }
-        }
-
-        const scores = { X: -10, O: 10, tie: 0 };
-
-        function minimax(board, depth, isMaximizing) {
-            let result = evaluateBoard();
-            if (result !== null) return scores[result];
-
-            if (isMaximizing) {
-                let bestScore = -Infinity;
-                for (let i = 0; i < 9; i++) {
-                    if (board[i].innerText === "") {
-                        board[i].innerText = botSymbol;
-                        let score = minimax(board, depth + 1, false);
-                        board[i].innerText = "";
-                        bestScore = Math.max(score, bestScore);
-                    }
-                }
-                return bestScore;
+                q.push(idx);
+                cells[idx].innerText = sym;
+                cells[idx].classList.add(sym === "X" ? "x-move" : "o-move");
+                if (q.length === 3) cells[q[0]].classList.add('ghost');
             } else {
-                let bestScore = Infinity;
-                for (let i = 0; i < 9; i++) {
-                    if (board[i].innerText === "") {
-                        board[i].innerText = mySymbol;
-                        let score = minimax(board, depth + 1, true);
-                        board[i].innerText = "";
-                        bestScore = Math.min(score, bestScore);
-                    }
-                }
-                return bestScore;
+                cells[idx].innerText = sym;
+                cells[idx].classList.add(sym === "X" ? "x-move" : "o-move");
             }
         }
 
-        // UTILS
-        function evaluateBoard() {
+        function updateStatus() {
+            const s = document.getElementById('status');
+            s.innerText = myTurn ? `Your Turn (${mySymbol})` : "Friend's Turn...";
+            s.style.color = myTurn ? "var(--blue)" : "var(--pink)";
+        }
+
+        function checkWin() {
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
             for (let c of wins) {
                 if (cells[c[0]].innerText && cells[c[0]].innerText === cells[c[1]].innerText && cells[c[0]].innerText === cells[c[2]].innerText) {
-                    return cells[c[0]].innerText;
+                    document.getElementById('status').innerText = `${cells[c[0]].innerText} WINS!`;
+                    gameActive = false;
+                    return;
                 }
             }
-            let openSpots = 0;
-            cells.forEach(c => { if(c.innerText === "") openSpots++; });
-            return openSpots === 0 ? 'tie' : null;
-        }
-
-        function checkWin(symbol) {
-            let result = evaluateBoard();
-            if (result) {
+            if ([...cells].every(c => c.innerText !== "") && gameMode === 'classic') {
+                document.getElementById('status').innerText = "DRAW!";
                 gameActive = false;
-                document.getElementById('status').innerText = result === 'tie' ? "It's a Draw!" : `Player ${result} Wins!`;
-                return true;
             }
-            return false;
         }
 
-        // (Keeping your Chat/Voice logic from before...)
-        function sendChat() {
-            const val = document.getElementById('chatInput').value;
-            if(val) { socket.emit('chatMessage', val); addChat(`You: ${val}`); document.getElementById('chatInput').value = ""; }
-        }
-        socket.on('chatMessage', msg => addChat(`Friend: ${msg}`));
-        function addChat(t) { const c = document.getElementById('chat'); c.innerHTML += `<div>${t}</div>`; c.scrollTop = c.scrollHeight; }
-
-        let pc;
-        async function initVoice() {
+        // Voice & Chat (Same as before but integrated)
+        async function setupVoice() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            document.getElementById('micBtn').innerText = "Voice ON";
+            document.getElementById('micBtn').innerText = "MIC ON";
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             stream.getTracks().forEach(t => pc.addTrack(t, stream));
             pc.ontrack = e => document.getElementById('remoteAudio').srcObject = e.streams[0];
             pc.onicecandidate = e => e.candidate && socket.emit('signal', { candidate: e.candidate });
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket.emit('signal', { sdp: offer });
+            if (mySymbol === "X") {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                socket.emit('signal', { sdp: offer });
+            }
         }
-        socket.on('signal', async (data) => {
-            if (!pc) await initVoice();
-            if (data.sdp) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                if (data.sdp.type === 'offer') {
-                    const ans = await pc.createAnswer();
-                    await pc.setLocalDescription(ans);
-                    socket.emit('signal', { sdp: ans });
+
+        socket.on('signal', async d => {
+            if(!pc) return;
+            if(d.sdp) {
+                await pc.setRemoteDescription(new RTCSessionDescription(d.sdp));
+                if(d.sdp.type === 'offer') {
+                    const a = await pc.createAnswer(); await pc.setLocalDescription(a);
+                    socket.emit('signal', { sdp: a });
                 }
-            } else if (data.candidate) { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); }
+            } else if(d.candidate) await pc.addIceCandidate(new RTCIceCandidate(d.candidate));
         });
+
+        function sendChat() {
+            const i = document.getElementById('chatInput');
+            if(i.value) { socket.emit('chatMessage', i.value); addChat(`You: ${i.value}`); i.value = ""; }
+        }
+        socket.on('chatMessage', m => addChat(`Friend: ${m}`));
+        function addChat(t) {
+            const c = document.getElementById('chat'); c.innerHTML += `<div>${t}</div>`;
+            c.scrollTop = c.scrollHeight;
+        }
     </script>
 </body>
 </html>
