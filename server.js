@@ -9,13 +9,35 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Store room settings
+const roomData = {};
+
 io.on('connection', (socket) => {
     let currentRoom = null;
 
-    socket.on('joinRoom', (roomID) => {
-        socket.join(roomID);
-        currentRoom = roomID;
-        socket.emit('joined', roomID);
+    socket.on('joinRoom', (data) => {
+        const { roomID, mode } = data;
+        const room = io.sockets.adapter.rooms.get(roomID);
+        const numClients = room ? room.size : 0;
+
+        if (numClients < 2) {
+            socket.join(roomID);
+            currentRoom = roomID;
+
+            // If it's a new room, set the mode. If joining, get the mode.
+            if (numClients === 0) {
+                roomData[roomID] = mode;
+            }
+            
+            const role = numClients === 0 ? "X" : "O";
+            socket.emit('joined', { 
+                roomID, 
+                role, 
+                mode: roomData[roomID] 
+            });
+        } else {
+            socket.emit('error', 'Room is full!');
+        }
     });
 
     socket.on('move', (data) => {
@@ -26,13 +48,8 @@ io.on('connection', (socket) => {
         if (currentRoom) socket.to(currentRoom).emit('chatMessage', msg);
     });
 
-    // WebRTC Signaling for Voice
     socket.on('signal', (data) => {
         if (currentRoom) socket.to(currentRoom).emit('signal', data);
-    });
-
-    socket.on('restart', () => {
-        if (currentRoom) socket.to(currentRoom).emit('restart');
     });
 });
 
