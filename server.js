@@ -16,17 +16,24 @@ io.on('connection', (socket) => {
         socket.join(roomID);
         currentRoom = roomID;
         console.log(`User ${socket.id} joined room: ${roomID}`);
-        // Tell the user they joined successfully
         socket.emit('joined', roomID);
     });
 
+    // Handle game moves
     socket.on('move', (data) => {
-        // Send move ONLY to the other person in the same room
         if (currentRoom) {
             socket.to(currentRoom).emit('move', data);
         }
     });
 
+    // Handle chat messages
+    socket.on('chatMessage', (msg) => {
+        if (currentRoom) {
+            socket.to(currentRoom).emit('chatMessage', msg);
+        }
+    });
+
+    // Handle restart
     socket.on('restart', () => {
         if (currentRoom) {
             socket.to(currentRoom).emit('restart');
@@ -34,6 +41,5 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Render uses port 10000 by default
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
