@@ -10,103 +10,96 @@
         :root { --blue: #00d4ff; --pink: #ff007f; --glass: rgba(255, 255, 255, 0.1); --bg: #050b18; }
         body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at center, #1a1a2e, #050b18); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         .glass-panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8); width: 100%; max-width: 400px; text-align: center; }
-        
-        /* Selection Buttons */
         .mode-select { display: flex; gap: 10px; margin-bottom: 20px; }
         .mode-btn { flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(0,0,0,0.3); color: white; cursor: pointer; transition: 0.3s; }
         .mode-btn.active { border-color: var(--blue); background: rgba(0, 212, 255, 0.2); box-shadow: 0 0 10px var(--blue); }
-
-        /* Game Board */
         .board { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 12px; margin: 20px 0; }
-        .cell { aspect-ratio: 1/1; background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .cell:hover { background: rgba(255,255,255,0.1); border-color: var(--blue); }
+        .cell { aspect-ratio: 1/1; background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid transparent; height: 100px; }
         .cell.x-move { color: var(--blue); text-shadow: 0 0 15px var(--blue); }
         .cell.o-move { color: var(--pink); text-shadow: 0 0 15px var(--pink); }
         .ghost { opacity: 0.25; filter: blur(1px); }
-
         input { background: rgba(0,0,0,0.4); border: 1px solid var(--glass); padding: 12px; border-radius: 10px; color: white; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
-        button.primary-btn { background: linear-gradient(45deg, var(--blue), #0080ff); border: none; padding: 15px; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
-        
-        #chat { height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; margin: 15px 0; font-size: 0.85rem; text-align: left; border: 1px solid rgba(255,255,255,0.05); }
+        button.primary-btn { background: linear-gradient(45deg, var(--blue), #0080ff); border: none; padding: 15px; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; }
+        #chat { height: 80px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; margin: 15px 0; font-size: 0.8rem; text-align: left; }
     </style>
 </head>
 <body>
 
-    <h1 style="text-shadow: 0 0 15px var(--blue); margin-top: 0;">NEON GHOST</h1>
+    <h1>NEON GHOST</h1>
 
     <div class="glass-panel" id="lobby">
-        <p style="margin-top:0">Choose Your Rules</p>
         <div class="mode-select">
-            <button class="mode-btn active" id="btn-classic" onclick="selectMode('classic')">CLASSIC<br><small>Infinite</small></button>
-            <button class="mode-btn" id="btn-ghost" onclick="selectMode('ghost')">GHOST<br><small>3-Piece Limit</small></button>
+            <button class="mode-btn active" id="btn-classic" onclick="selectMode('classic')">CLASSIC</button>
+            <button class="mode-btn" id="btn-ghost" onclick="selectMode('ghost')">GHOST</button>
         </div>
-        <input type="text" id="roomInput" placeholder="Enter Room Code...">
+        <input type="text" id="roomInput" placeholder="Room Code (e.g. 123)">
         <button class="primary-btn" onclick="joinRoom()">Enter Arena</button>
     </div>
 
     <div class="glass-panel" id="gameArea" style="display:none;">
-        <div id="modeDisplay" style="font-size: 0.7rem; color: var(--blue); letter-spacing: 2px;"></div>
-        <div id="status" style="font-size: 1.2rem; margin: 10px 0; font-weight: bold;">Connecting...</div>
+        <div id="modeDisplay" style="font-size: 0.7rem; color: var(--blue); margin-bottom: 10px;"></div>
+        <div id="status" style="font-size: 1.2rem; font-weight: bold;">Waiting...</div>
         
         <div class="board" id="board">
-            <div class="cell" onclick="handleCellClick(0)"></div>
-            <div class="cell" onclick="handleCellClick(1)"></div>
-            <div class="cell" onclick="handleCellClick(2)"></div>
-            <div class="cell" onclick="handleCellClick(3)"></div>
-            <div class="cell" onclick="handleCellClick(4)"></div>
-            <div class="cell" onclick="handleCellClick(5)"></div>
-            <div class="cell" onclick="handleCellClick(6)"></div>
-            <div class="cell" onclick="handleCellClick(7)"></div>
-            <div class="cell" onclick="handleCellClick(8)"></div>
+            <div class="cell" onclick="handleMove(0)"></div>
+            <div class="cell" onclick="handleMove(1)"></div>
+            <div class="cell" onclick="handleMove(2)"></div>
+            <div class="cell" onclick="handleMove(3)"></div>
+            <div class="cell" onclick="handleMove(4)"></div>
+            <div class="cell" onclick="handleMove(5)"></div>
+            <div class="cell" onclick="handleMove(6)"></div>
+            <div class="cell" onclick="handleMove(7)"></div>
+            <div class="cell" onclick="handleMove(8)"></div>
         </div>
 
         <div id="chat"></div>
-        <div style="display:flex; gap: 8px;">
-            <input type="text" id="chatInput" placeholder="Chat..." style="margin-bottom:0;">
-            <button onclick="sendChat()" style="background:var(--blue); border:none; border-radius:10px; padding:0 15px; cursor:pointer;">➔</button>
+        <div style="display:flex; gap: 5px;">
+            <input type="text" id="chatInput" placeholder="Chat..." style="margin:0;">
+            <button onclick="sendChat()" style="background:var(--blue); border:none; border-radius:10px; padding:10px;">➔</button>
         </div>
-
-        <button id="micBtn" onclick="initVoice()" style="margin-top:20px; background:#22c55e; border:none; padding:10px; border-radius:10px; color:white; width:100%; cursor:pointer;">🎙️ ENABLE VOICE</button>
+        <button id="micBtn" onclick="initVoice()" style="margin-top:15px; background:#22c55e; border:none; padding:10px; border-radius:10px; color:white; width:100%;">🎙️ Voice Chat</button>
         <audio id="remoteAudio" autoplay></audio>
     </div>
 
     <script>
         const socket = io();
         let myTurn = false, mySymbol = "", activeMode = "classic", gameLive = true;
-        let xQueue = [], oQueue = [], peer;
+        let xQueue = [], oQueue = [], peerConnection;
         const cells = document.querySelectorAll('.cell');
 
-        // MODE SELECTION
         function selectMode(m) {
             activeMode = m;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('btn-' + m).classList.add('active');
-            if (window.navigator.vibrate) window.navigator.vibrate(20); 
         }
 
         function joinRoom() {
             const room = document.getElementById('roomInput').value;
-            if (room) socket.emit('joinRoom', { roomID: room, mode: activeMode });
+            if (!room) return alert("Please enter a room code!");
+            // Sending BOTH room and mode to match server
+            socket.emit('joinRoom', { roomID: room, mode: activeMode });
         }
 
         socket.on('joined', (data) => {
+            console.log("Successfully joined:", data);
             mySymbol = data.role;
             activeMode = data.mode;
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
-            document.getElementById('modeDisplay').innerText = activeMode === 'ghost' ? "RULES: NEON GHOST (3 PIECE LIMIT)" : "RULES: CLASSIC";
+            document.getElementById('modeDisplay').innerText = `MODE: ${activeMode.toUpperCase()}`;
             myTurn = (mySymbol === "X");
             updateUI();
         });
 
-        // GAME LOGIC
-        function handleCellClick(i) {
+        socket.on('errorMsg', (msg) => alert(msg));
+
+        function handleMove(i) {
             if (cells[i].innerText === "" && myTurn && gameLive) {
                 applyMove(i, mySymbol);
                 socket.emit('move', { index: i, symbol: mySymbol });
                 myTurn = false;
                 updateUI();
-                checkWinner();
+                checkWin();
             }
         }
 
@@ -114,16 +107,16 @@
             applyMove(data.index, data.symbol);
             myTurn = true;
             updateUI();
-            checkWinner();
+            checkWin();
         });
 
         function applyMove(idx, sym) {
             if (activeMode === 'ghost') {
                 const q = (sym === "X") ? xQueue : oQueue;
                 if (q.length === 3) {
-                    const oldIdx = q.shift();
-                    cells[oldIdx].innerText = "";
-                    cells[oldIdx].className = "cell";
+                    const old = q.shift();
+                    cells[old].innerText = "";
+                    cells[old].className = "cell";
                 }
                 q.push(idx);
                 cells[idx].innerText = sym;
@@ -137,72 +130,55 @@
 
         function updateUI() {
             const s = document.getElementById('status');
-            s.innerText = myTurn ? `YOUR TURN (${mySymbol})` : "OPPONENT'S TURN...";
+            s.innerText = myTurn ? `Your Turn (${mySymbol})` : "Friend's Turn...";
             s.style.color = myTurn ? "var(--blue)" : "var(--pink)";
         }
 
-        function checkWinner() {
+        function checkWin() {
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            for (let combo of wins) {
-                const [a,b,c] = combo;
-                if (cells[a].innerText && cells[a].innerText === cells[b].innerText && cells[a].innerText === cells[c].innerText) {
-                    document.getElementById('status').innerText = `${cells[a].innerText} VICTORIOUS!`;
+            for (let c of wins) {
+                if (cells[c[0]].innerText && cells[c[0]].innerText === cells[c[1]].innerText && cells[c[0]].innerText === cells[c[2]].innerText) {
+                    document.getElementById('status').innerText = `${cells[c[0]].innerText} WINS!`;
                     gameLive = false;
                     return;
                 }
             }
-            if (activeMode === 'classic' && [...cells].every(c => c.innerText !== "")) {
-                document.getElementById('status').innerText = "DRAW!";
-                gameLive = false;
-            }
         }
 
-        // VOICE CHAT (WebRTC)
+        // --- Voice Chat ---
         async function initVoice() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                document.getElementById('micBtn').innerText = "VOICE CONNECTED";
-                document.getElementById('micBtn').style.background = "#00d4ff";
-
-                peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-                stream.getTracks().forEach(t => peer.addTrack(t, stream));
-
-                peer.ontrack = e => document.getElementById('remoteAudio').srcObject = e.streams[0];
-                peer.onicecandidate = e => e.candidate && socket.emit('signal', { candidate: e.candidate });
-
-                if (mySymbol === "X") {
-                    const offer = await peer.createOffer();
-                    await peer.setLocalDescription(offer);
-                    socket.emit('signal', { sdp: offer });
-                }
-            } catch (e) { alert("Microphone access required for voice chat!"); }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('micBtn').innerText = "Mic Active";
+            peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            stream.getTracks().forEach(t => peerConnection.addTrack(t, stream));
+            peerConnection.ontrack = e => document.getElementById('remoteAudio').srcObject = e.streams[0];
+            peerConnection.onicecandidate = e => e.candidate && socket.emit('signal', { candidate: e.candidate });
+            if (mySymbol === "X") {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                socket.emit('signal', { sdp: offer });
+            }
         }
 
         socket.on('signal', async d => {
-            if (!peer) return;
+            if (!peerConnection) return;
             if (d.sdp) {
-                await peer.setRemoteDescription(new RTCSessionDescription(d.sdp));
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(d.sdp));
                 if (d.sdp.type === 'offer') {
-                    const ans = await peer.createAnswer();
-                    await peer.setLocalDescription(ans);
+                    const ans = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(ans);
                     socket.emit('signal', { sdp: ans });
                 }
-            } else if (d.candidate) await peer.addIceCandidate(new RTCIceCandidate(d.candidate));
+            } else if (d.candidate) await peerConnection.addIceCandidate(new RTCIceCandidate(d.candidate));
         });
 
-        // CHAT BOX
         function sendChat() {
-            const input = document.getElementById('chatInput');
-            if (input.value) {
-                socket.emit('chatMessage', input.value);
-                addMessage(`You: ${input.value}`);
-                input.value = "";
-            }
+            const i = document.getElementById('chatInput');
+            if(i.value) { socket.emit('chatMessage', i.value); addChat(`You: ${i.value}`); i.value = ""; }
         }
-        socket.on('chatMessage', m => addMessage(`Friend: ${m}`));
-        function addMessage(t) {
-            const c = document.getElementById('chat');
-            c.innerHTML += `<div>${t}</div>`;
+        socket.on('chatMessage', m => addChat(`Friend: ${m}`));
+        function addChat(t) {
+            const c = document.getElementById('chat'); c.innerHTML += `<div>${t}</div>`;
             c.scrollTop = c.scrollHeight;
         }
     </script>
