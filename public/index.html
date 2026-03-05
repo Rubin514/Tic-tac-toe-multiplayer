@@ -3,183 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Ghost Tic-Tac-Toe</title>
+    <title>Neon Ghost - Multiplayer</title>
     <script src="/socket.io/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #00d4ff; --pink: #ff007f; --glass: rgba(255, 255, 255, 0.1); --bg: #050b18; }
-        body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at center, #1a1a2e, #050b18); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .glass-panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8); width: 100%; max-width: 400px; text-align: center; }
-        .mode-select { display: flex; gap: 10px; margin-bottom: 20px; }
-        .mode-btn { flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(0,0,0,0.3); color: white; cursor: pointer; transition: 0.3s; }
-        .mode-btn.active { border-color: var(--blue); background: rgba(0, 212, 255, 0.2); box-shadow: 0 0 10px var(--blue); }
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 12px; margin: 20px 0; }
-        .cell { aspect-ratio: 1/1; background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid transparent; height: 100px; }
-        .cell.x-move { color: var(--blue); text-shadow: 0 0 15px var(--blue); }
-        .cell.o-move { color: var(--pink); text-shadow: 0 0 15px var(--pink); }
-        .ghost { opacity: 0.25; filter: blur(1px); }
-        input { background: rgba(0,0,0,0.4); border: 1px solid var(--glass); padding: 12px; border-radius: 10px; color: white; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
-        button.primary-btn { background: linear-gradient(45deg, var(--blue), #0080ff); border: none; padding: 15px; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; }
-        #chat { height: 80px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; margin: 15px 0; font-size: 0.8rem; text-align: left; }
+        :root { --blue: #00d4ff; --pink: #ff007f; --glass: rgba(255, 255, 255, 0.1); }
+        body { font-family: 'Poppins', sans-serif; background: #050b18; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        input { background: rgba(0,0,0,0.4); border: 1px solid var(--glass); padding: 12px; border-radius: 10px; color: white; width: 100%; box-sizing: border-box; margin-bottom: 10px; outline: none; }
+        .primary-btn { background: var(--blue); border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; color: #050b18; transition: 0.3s; }
+        .primary-btn:hover { box-shadow: 0 0 15px var(--blue); }
+        .hidden { display: none; }
+        .points-badge { color: var(--blue); font-weight: bold; }
+        .logout-btn { background: none; border: 1px solid var(--pink); color: var(--pink); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>NEON GHOST</h1>
-
-    <div class="glass-panel" id="lobby">
-        <div class="mode-select">
-            <button class="mode-btn active" id="btn-classic" onclick="selectMode('classic')">CLASSIC</button>
-            <button class="mode-btn" id="btn-ghost" onclick="selectMode('ghost')">GHOST</button>
-        </div>
-        <input type="text" id="roomInput" placeholder="Room Code (e.g. 123)">
-        <button class="primary-btn" onclick="joinRoom()">Enter Arena</button>
+    <div id="authArea" class="panel">
+        <h1 style="color:var(--blue); text-shadow: 0 0 10px var(--blue);">NEON LOGIN</h1>
+        <input type="text" id="userIn" placeholder="Username">
+        <input type="password" id="passIn" placeholder="Password">
+        <button class="primary-btn" onclick="handleAuth()">LOGIN / REGISTER</button>
     </div>
 
-    <div class="glass-panel" id="gameArea" style="display:none;">
-        <div id="modeDisplay" style="font-size: 0.7rem; color: var(--blue); margin-bottom: 10px;"></div>
-        <div id="status" style="font-size: 1.2rem; font-weight: bold;">Waiting...</div>
+    <div id="lobbyArea" class="panel hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <span class="points-badge">XP: <span id="userXP">0</span></span>
+            <button class="logout-btn" onclick="location.reload()">LOGOUT</button>
+        </div>
         
-        <div class="board" id="board">
-            <div class="cell" onclick="handleMove(0)"></div>
-            <div class="cell" onclick="handleMove(1)"></div>
-            <div class="cell" onclick="handleMove(2)"></div>
-            <div class="cell" onclick="handleMove(3)"></div>
-            <div class="cell" onclick="handleMove(4)"></div>
-            <div class="cell" onclick="handleMove(5)"></div>
-            <div class="cell" onclick="handleMove(6)"></div>
-            <div class="cell" onclick="handleMove(7)"></div>
-            <div class="cell" onclick="handleMove(8)"></div>
+        <h2 id="welcomeMsg" style="font-size: 14px; margin-bottom: 20px;"></h2>
+        
+        <input type="text" id="roomIn" placeholder="Enter Room Code">
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="primary-btn" style="background:var(--glass); color:white; border: 1px solid var(--blue);" onclick="enterGame('classic')">CLASSIC</button>
+            <button class="primary-btn" style="background:var(--glass); color:white; border: 1px solid var(--pink);" onclick="enterGame('ghost')">GHOST</button>
         </div>
+    </div>
 
-        <div id="chat"></div>
-        <div style="display:flex; gap: 5px;">
-            <input type="text" id="chatInput" placeholder="Chat..." style="margin:0;">
-            <button onclick="sendChat()" style="background:var(--blue); border:none; border-radius:10px; padding:10px;">➔</button>
-        </div>
-        <button id="micBtn" onclick="initVoice()" style="margin-top:15px; background:#22c55e; border:none; padding:10px; border-radius:10px; color:white; width:100%;">🎙️ Voice Chat</button>
-        <audio id="remoteAudio" autoplay></audio>
+    <div id="gameArea" class="panel hidden">
+        <h2 id="status">Waiting for Opponent...</h2>
+        <div id="board" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+            </div>
     </div>
 
     <script>
         const socket = io();
-        let myTurn = false, mySymbol = "", activeMode = "classic", gameLive = true;
-        let xQueue = [], oQueue = [], peerConnection;
-        const cells = document.querySelectorAll('.cell');
+        let currentUser = "";
+        let myPoints = 0;
 
-        function selectMode(m) {
-            activeMode = m;
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-' + m).classList.add('active');
-        }
+        async function handleAuth() {
+            const username = document.getElementById('userIn').value;
+            const password = document.getElementById('passIn').value;
 
-        function joinRoom() {
-            const room = document.getElementById('roomInput').value;
-            if (!room) return alert("Please enter a room code!");
-            // Sending BOTH room and mode to match server
-            socket.emit('joinRoom', { roomID: room, mode: activeMode });
-        }
+            const res = await fetch('/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
 
-        socket.on('joined', (data) => {
-            console.log("Successfully joined:", data);
-            mySymbol = data.role;
-            activeMode = data.mode;
-            document.getElementById('lobby').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            document.getElementById('modeDisplay').innerText = `MODE: ${activeMode.toUpperCase()}`;
-            myTurn = (mySymbol === "X");
-            updateUI();
-        });
-
-        socket.on('errorMsg', (msg) => alert(msg));
-
-        function handleMove(i) {
-            if (cells[i].innerText === "" && myTurn && gameLive) {
-                applyMove(i, mySymbol);
-                socket.emit('move', { index: i, symbol: mySymbol });
-                myTurn = false;
-                updateUI();
-                checkWin();
-            }
-        }
-
-        socket.on('move', (data) => {
-            applyMove(data.index, data.symbol);
-            myTurn = true;
-            updateUI();
-            checkWin();
-        });
-
-        function applyMove(idx, sym) {
-            if (activeMode === 'ghost') {
-                const q = (sym === "X") ? xQueue : oQueue;
-                if (q.length === 3) {
-                    const old = q.shift();
-                    cells[old].innerText = "";
-                    cells[old].className = "cell";
-                }
-                q.push(idx);
-                cells[idx].innerText = sym;
-                cells[idx].classList.add(sym === "X" ? "x-move" : "o-move");
-                if (q.length === 3) cells[q[0]].classList.add('ghost');
+            if (data.success) {
+                currentUser = username;
+                myPoints = data.points;
+                document.getElementById('userXP').innerText = myPoints;
+                document.getElementById('welcomeMsg').innerText = "Welcome back, " + username;
+                document.getElementById('authArea').classList.add('hidden');
+                document.getElementById('lobbyArea').classList.remove('hidden');
             } else {
-                cells[idx].innerText = sym;
-                cells[idx].classList.add(sym === "X" ? "x-move" : "o-move");
+                alert(data.msg);
             }
         }
 
-        function updateUI() {
-            const s = document.getElementById('status');
-            s.innerText = myTurn ? `Your Turn (${mySymbol})` : "Friend's Turn...";
-            s.style.color = myTurn ? "var(--blue)" : "var(--pink)";
+        function enterGame(mode) {
+            const room = document.getElementById('roomIn').value;
+            if (!room) return alert("Enter a room code!");
+            
+            socket.emit('joinRoom', { roomID: room, mode: mode, username: currentUser });
+            document.getElementById('lobbyArea').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
         }
 
-        function checkWin() {
-            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            for (let c of wins) {
-                if (cells[c[0]].innerText && cells[c[0]].innerText === cells[c[1]].innerText && cells[c[0]].innerText === cells[c[2]].innerText) {
-                    document.getElementById('status').innerText = `${cells[c[0]].innerText} WINS!`;
-                    gameLive = false;
-                    return;
-                }
-            }
-        }
-
-        // --- Voice Chat ---
-        async function initVoice() {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            document.getElementById('micBtn').innerText = "Mic Active";
-            peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-            stream.getTracks().forEach(t => peerConnection.addTrack(t, stream));
-            peerConnection.ontrack = e => document.getElementById('remoteAudio').srcObject = e.streams[0];
-            peerConnection.onicecandidate = e => e.candidate && socket.emit('signal', { candidate: e.candidate });
-            if (mySymbol === "X") {
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                socket.emit('signal', { sdp: offer });
-            }
-        }
-
-        socket.on('signal', async d => {
-            if (!peerConnection) return;
-            if (d.sdp) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(d.sdp));
-                if (d.sdp.type === 'offer') {
-                    const ans = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(ans);
-                    socket.emit('signal', { sdp: ans });
-                }
-            } else if (d.candidate) await peerConnection.addIceCandidate(new RTCIceCandidate(d.candidate));
+        socket.on('updatePoints', (newPoints) => {
+            document.getElementById('userXP').innerText = newPoints;
+            alert("Victory! +10 Points Saved to Cloud");
         });
 
-        function sendChat() {
-            const i = document.getElementById('chatInput');
-            if(i.value) { socket.emit('chatMessage', i.value); addChat(`You: ${i.value}`); i.value = ""; }
-        }
-        socket.on('chatMessage', m => addChat(`Friend: ${m}`));
-        function addChat(t) {
-            const c = document.getElementById('chat'); c.innerHTML += `<div>${t}</div>`;
-            c.scrollTop = c.scrollHeight;
+        // Trigger this when you detect a win in your game logic
+        function playerWon() {
+            socket.emit('gameWin');
         }
     </script>
 </body>
