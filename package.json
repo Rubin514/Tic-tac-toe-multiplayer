@@ -1,5 +1,5 @@
 {
-  "name": "neon-ghost-tic-tac-toe",
+  "name": "tic-tac-toe--multiplayer",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -7,6 +7,8 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "bcryptjs": "^2.4.3",
+    "@supabase/supabase-js": "^2.39.0"
   }
 }
