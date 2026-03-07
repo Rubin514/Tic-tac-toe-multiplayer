@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Neon Ghost - Multiplayer</title>
+    <title>Neon Ghost</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --blue: #00d4ff; --pink: #ff007f; --glass: rgba(255, 255, 255, 0.1); }
+        :root { --blue: #00d4ff; --glass: rgba(255, 255, 255, 0.1); }
         body { background: #050b18; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .panel { background: var(--glass); backdrop-filter: blur(10px); padding: 2rem; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); width: 320px; }
         .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .hidden { display: none; }
+        input { width: 90%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none; background: rgba(0,0,0,0.3); color: white; }
     </style>
 </head>
 <body>
@@ -22,16 +23,18 @@
     </div>
 
     <div id="lobbyArea" class="panel hidden">
-        <h2 id="welcome"></h2>
-        <p>Current XP: <span id="userXP" style="color:var(--blue)">0</span></p>
-        <input type="text" id="roomIn" placeholder="Enter Room Code" style="width:90%; padding:10px; margin-bottom:10px; border-radius:5px; border:none;">
+        <h2 id="welcome">Welcome</h2>
+        <p>Your XP: <span id="userXP" style="color:var(--blue)">0</span></p>
+        <hr style="opacity:0.2; margin: 20px 0;">
+        <input type="text" id="roomIn" placeholder="Enter Room Code">
         <button class="btn" style="background:var(--blue)" onclick="enterArena()">JOIN MATCH</button>
-        <button class="btn" style="background:transparent; color:red; font-size:12px;" onclick="logout()">Sign Out</button>
+        <button class="btn" style="background:transparent; color:red; font-size:11px; margin-top:20px;" onclick="logout()">SIGN OUT</button>
     </div>
 
     <script>
-        const supabaseUrl = 'https://pcvszmvpazwkfufiaowm.supabase.co'; //
-        const supabaseKey = 'YOUR_ANON_KEY'; 
+        // Use your URL from screenshot 1000057757.jpg
+        const supabaseUrl = 'https://pcvszmvpazwkfufiaowm.supabase.co';
+        const supabaseKey = 'YOUR_ANON_KEY'; // Paste your actual Anon Key here
         const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
         const socket = io();
         let sessionUser = null;
@@ -48,15 +51,23 @@
             location.reload();
         }
 
+        // THIS IS THE MAGIC: It detects when you return from Google
         _supabase.auth.onAuthStateChange(async (event, session) => {
             if (session) {
                 sessionUser = session.user;
+                
+                // Sync with your server to get/create points
                 const res = await fetch('/auth/google-sync', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email: sessionUser.email, name: sessionUser.user_metadata.full_name })
+                    body: JSON.stringify({ 
+                        email: sessionUser.email, 
+                        name: sessionUser.user_metadata.full_name 
+                    })
                 });
                 const data = await res.json();
+
+                // SWITCH UI: Hide Login, Show Lobby
                 document.getElementById('userXP').innerText = data.points;
                 document.getElementById('welcome').innerText = "Hero: " + sessionUser.user_metadata.full_name;
                 document.getElementById('authArea').classList.add('hidden');
@@ -67,8 +78,8 @@
         function enterArena() {
             const room = document.getElementById('roomIn').value;
             if(!room) return alert("Code Required");
-            socket.emit('joinRoom', { roomID: room, email: sessionUser.email, username: sessionUser.user_metadata.full_name });
-            // Transition to game board logic here
+            socket.emit('joinRoom', { roomID: room, email: sessionUser.email });
+            // Add your board showing logic here
         }
     </script>
 </body>
