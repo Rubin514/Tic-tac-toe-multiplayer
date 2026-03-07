@@ -1,15 +1,19 @@
-// Use the URL and Anon Key from your Supabase API Keys screen
-const supabaseUrl = 'https://pcvszmvpazwkfufiaowm.supabase.co';
-const supabaseKey = 'YOUR_ANON_KEY_HERE'; 
-const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-async function signIn() {
-    const { error } = await _supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { 
-            // This sends the user back to your Render game
-            redirectTo: window.location.origin 
-        }
-    });
-    if (error) console.error("Login Error:", error.message);
+{
+  "name": "neon-ghost-multiplayer",
+  "version": "1.0.0",
+  "description": "Multiplayer Tic-Tac-Toe with Google Auth and XP System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "path": "^0.12.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
 }
