@@ -1,14 +1,15 @@
-{
-  "name": "tic-tac-toe--multiplayer",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "bcryptjs": "^2.4.3",
-    "@supabase/supabase-js": "^2.39.0"
-  }
+// Use the URL and Anon Key from your Supabase API Keys screen
+const supabaseUrl = 'https://pcvszmvpazwkfufiaowm.supabase.co';
+const supabaseKey = 'YOUR_ANON_KEY_HERE'; 
+const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function signIn() {
+    const { error } = await _supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { 
+            // This sends the user back to your Render game
+            redirectTo: window.location.origin 
+        }
+    });
+    if (error) console.error("Login Error:", error.message);
 }
