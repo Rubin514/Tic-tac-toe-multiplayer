@@ -1,43 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Ghost - Google Auth</title>
+    <title>Neon Ghost - Multiplayer</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --blue: #00d4ff; --glass: rgba(255, 255, 255, 0.1); }
-        body { font-family: sans-serif; background: #050b18; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .panel { background: var(--glass); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; text-align: center; width: 300px; border: 1px solid rgba(255,255,255,0.1); }
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        :root { --blue: #00d4ff; --pink: #ff007f; --glass: rgba(255, 255, 255, 0.1); }
+        body { background: #050b18; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .panel { background: var(--glass); backdrop-filter: blur(10px); padding: 2rem; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); width: 320px; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div id="authArea" class="panel">
-        <h1 style="color:var(--blue)">NEON GHOST</h1>
+        <h1 style="color:var(--blue); text-shadow: 0 0 10px var(--blue);">NEON GHOST</h1>
         <button class="btn" style="background:white; color:#444;" onclick="login()">
-            <img src="https://www.google.com/favicon.ico" width="18"> LOGIN WITH GOOGLE
+            <img src="https://www.google.com/favicon.ico" width="18"> CONTINUE WITH GOOGLE
         </button>
     </div>
 
     <div id="lobbyArea" class="panel hidden">
-        <p>XP: <span id="userXP" style="color:var(--blue)">0</span></p>
         <h2 id="welcome"></h2>
-        <input type="text" id="roomIn" placeholder="Room Code" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px;">
-        <button class="btn" style="background:var(--blue)" onclick="enterArena()">ENTER ARENA</button>
-        <button class="btn" style="background:transparent; color:red; font-size:11px;" onclick="logout()">Logout</button>
+        <p>Current XP: <span id="userXP" style="color:var(--blue)">0</span></p>
+        <input type="text" id="roomIn" placeholder="Enter Room Code" style="width:90%; padding:10px; margin-bottom:10px; border-radius:5px; border:none;">
+        <button class="btn" style="background:var(--blue)" onclick="enterArena()">JOIN MATCH</button>
+        <button class="btn" style="background:transparent; color:red; font-size:12px;" onclick="logout()">Sign Out</button>
     </div>
 
     <script>
-        // USE YOUR KEYS FROM SCREENSHOT 1000057757.jpg
-        const supabaseUrl = 'https://pcvszmvpazwkfufiaowm.supabase.co';
+        const supabaseUrl = 'https://pcvszmvpazwkfufiaowm.supabase.co'; //
         const supabaseKey = 'YOUR_ANON_KEY'; 
         const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
         const socket = io();
-        let userProfile = null;
+        let sessionUser = null;
 
         async function login() {
             await _supabase.auth.signInWithOAuth({
@@ -53,18 +50,15 @@
 
         _supabase.auth.onAuthStateChange(async (event, session) => {
             if (session) {
-                userProfile = session.user;
+                sessionUser = session.user;
                 const res = await fetch('/auth/google-sync', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        email: userProfile.email, 
-                        name: userProfile.user_metadata.full_name 
-                    })
+                    body: JSON.stringify({ email: sessionUser.email, name: sessionUser.user_metadata.full_name })
                 });
                 const data = await res.json();
                 document.getElementById('userXP').innerText = data.points;
-                document.getElementById('welcome').innerText = "Hero: " + userProfile.user_metadata.full_name;
+                document.getElementById('welcome').innerText = "Hero: " + sessionUser.user_metadata.full_name;
                 document.getElementById('authArea').classList.add('hidden');
                 document.getElementById('lobbyArea').classList.remove('hidden');
             }
@@ -72,9 +66,9 @@
 
         function enterArena() {
             const room = document.getElementById('roomIn').value;
-            if(!room) return alert("Enter Code");
-            socket.emit('joinRoom', { roomID: room, email: userProfile.email });
-            // ... Logic to show game board ...
+            if(!room) return alert("Code Required");
+            socket.emit('joinRoom', { roomID: room, email: sessionUser.email, username: sessionUser.user_metadata.full_name });
+            // Transition to game board logic here
         }
     </script>
 </body>
