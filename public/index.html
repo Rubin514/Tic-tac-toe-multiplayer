@@ -3,114 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Ghost - Arena</title>
+    <title>Neon Ghost</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { --blue: #00d4ff; --glass: rgba(255, 255, 255, 0.1); }
         body { background: #050b18; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .panel { background: var(--glass); backdrop-filter: blur(15px); padding: 2rem; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); width: 320px; }
-        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; margin-top: 15px; }
         .hidden { display: none !important; }
-        input { width: 90%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: none; background: rgba(0,0,0,0.4); color: white; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="loginSection" class="panel">
-        <h1 style="color:var(--blue); text-shadow: 0 0 10px var(--blue);">NEON GHOST</h1>
-        <button class="btn" style="background:white; color:#222;" onclick="handleLogin()">
-            <img src="https://www.google.com/favicon.ico" width="18"> CONTINUE WITH GOOGLE
-        </button>
+        <h1 style="color:var(--blue)">NEON GHOST</h1>
+        <button class="btn" style="background:white; color:#222;" onclick="handleLogin()">CONTINUE WITH GOOGLE</button>
     </div>
 
     <div id="lobbySection" class="panel hidden">
-        <h2 id="displayName">Loading...</h2>
-        <div style="font-size: 24px; color: var(--blue); font-weight: bold; margin: 10px 0;">
-            XP: <span id="displayXP">0</span>
-        </div>
-        <input type="text" id="roomInput" placeholder="ROOM CODE">
-        <button class="btn" style="background:var(--blue); color: #000;" onclick="joinMatch()">JOIN ARENA</button>
-        <button class="btn" style="background:transparent; color: #ff4444; font-size: 11px;" onclick="handleLogout()">Sign Out</button>
+        <h2 id="displayName">Loading Hero...</h2>
+        <div style="font-size: 24px; color: var(--blue);">XP: <span id="displayXP">0</span></div>
+        <input type="text" id="roomInput" placeholder="ROOM CODE" style="width:80%; padding:10px; margin-top:10px;">
+        <button class="btn" style="background:var(--blue)" onclick="joinMatch()">JOIN ARENA</button>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://pcvszmvpazwkfufiaowm.supabase.co'; //
-        const SUPABASE_KEY = 'YOUR_ANON_KEY'; // Replace with your 'anon' key
-        
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const socket = io();
-        let currentUser = null;
+        // Use your project URL
+        const _supabase = supabase.createClient('https://pcvszmvpazwkfufiaowm.supabase.co', 'YOUR_ANON_KEY', {
+            auth: { persistSession: true, detectSessionInUrl: true }
+        });
 
-        // 1. LOGIN FUNCTION
-        async function handleLogin() {
-            const { error } = await _supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { 
-                    redirectTo: window.location.origin // Automatically uses your Render URL
-                }
-            });
-            if (error) alert(error.message);
-        }
-
-        // 2. LOGOUT FUNCTION
-        async function handleLogout() {
-            await _supabase.auth.signOut();
-            window.location.reload();
-        }
-
-        // 3. THE LOOP-BREAKER: SESSION CHECKER
-        async function initApp() {
-            // Check if user is already logged in (catches the return from Google)
-            const { data: { session } } = await _supabase.auth.getSession();
-            
-            if (session) {
-                setupLobby(session.user);
-            }
-        }
-
-        // 4. SHOW LOBBY & SYNC POINTS
-        async function setupLobby(user) {
-            currentUser = user;
-            
-            // Switch UI immediately
+        // 1. FAST SWITCH: Show lobby as soon as session exists
+        function showLobbyUI(user) {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('lobbySection').classList.remove('hidden');
-            document.getElementById('displayName').innerText = "Hero: " + user.user_metadata.full_name;
-
-            // Sync with server to get XP
-            try {
-                const response = await fetch('/auth/google-sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: user.email,
-                        name: user.user_metadata.full_name
-                    })
-                });
-                const data = await response.json();
-                document.getElementById('displayXP').innerText = data.points || 0;
-            } catch (err) {
-                console.error("Sync error:", err);
-            }
+            document.getElementById('displayName').innerText = user.user_metadata.full_name;
         }
 
-        // 5. LISTEN FOR AUTH CHANGES
+        // 2. CHECK ON LOAD
+        window.onload = async () => {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                showLobbyUI(session.user);
+                syncPoints(session.user);
+            }
+        };
+
+        // 3. LISTEN FOR REDIRECT RETURN
         _supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                setupLobby(session.user);
+            if (session && event === 'SIGNED_IN') {
+                showLobbyUI(session.user);
+                syncPoints(session.user);
             }
         });
 
-        function joinMatch() {
-            const code = document.getElementById('roomInput').value;
-            if (!code) return alert("Enter Code");
-            socket.emit('joinRoom', { roomID: code, email: currentUser.email });
-            alert("Waiting for opponent in room: " + code);
+        async function syncPoints(user) {
+            try {
+                const res = await fetch('/auth/google-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email, name: user.user_metadata.full_name })
+                });
+                const data = await res.json();
+                document.getElementById('displayXP').innerText = data.points || 0;
+            } catch (e) { console.error("Sync late, but auth is fine."); }
         }
 
-        // Start the check on page load
-        initApp();
+        async function handleLogin() {
+            await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: 'https://tic-tac-toe-multiplayer-k15s.onrender.com' }
+            });
+        }
     </script>
 </body>
 </html>
