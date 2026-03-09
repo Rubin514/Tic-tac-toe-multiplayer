@@ -5,27 +5,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #050b18; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .panel { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); padding: 3rem; border-radius: 20px; text-align: center; width: 300px; border: 1px solid rgba(0,212,255,0.3); }
-        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; background: white; color: #222; }
+        .panel { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); padding: 3rem; border-radius: 20px; text-align: center; border: 1px solid #00d4ff; }
+        .btn { padding: 15px 30px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; background: white; color: #222; }
     </style>
 </head>
 <body>
     <div class="panel">
-        <h1 style="color:#00d4ff; text-shadow: 0 0 10px #00d4ff;">NEON GHOST</h1>
-        <p>Sign in to enter the arena</p>
-        <button class="btn" onclick="login()">CONTINUE WITH GOOGLE</button>
+        <h1 style="color:#00d4ff">NEON GHOST</h1>
+        <button class="btn" onclick="login()">LOGIN WITH GOOGLE</button>
     </div>
-
     <script>
         const _supabase = supabase.createClient('https://pcvszmvpazwkfufiaowm.supabase.co', 'YOUR_ANON_KEY');
-
         async function login() {
             await _supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: { 
-                    // Tell Google to send the user to lobby.html after login
-                    redirectTo: window.location.origin + '/lobby.html'
-                }
+                options: { redirectTo: window.location.origin + '/lobby.html' }
             });
         }
     </script>
