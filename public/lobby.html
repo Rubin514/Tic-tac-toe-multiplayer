@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Neon Ghost - Lobby</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background: #050b18; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .panel { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); padding: 2rem; border-radius: 20px; text-align: center; width: 320px; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; background: #00d4ff; color: black; margin-top: 10px; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; background: rgba(0,0,0,0.5); color: white; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="lobbyContent" class="panel" style="display:none;">
+        <h2 id="userName">Hero</h2>
+        <div style="font-size: 24px; color: #00d4ff; font-weight: bold; margin-bottom: 10px;"><span id="userXP">0</span> XP</div>
+        <input type="text" id="roomID" placeholder="ENTER ROOM CODE">
+        <button class="btn" onclick="joinGame()">JOIN MATCH</button>
+        <button class="btn" style="background:transparent; color:red; font-size:12px;" onclick="logout()">Sign Out</button>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://pcvszmvpazwkfufiaowm.supabase.co', 'YOUR_ANON_KEY');
+        const socket = io();
+
+        async function checkUser() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            
+            if (!session) {
+                // If not logged in, go back to login page
+                window.location.href = '/index.html';
+            } else {
+                // Show the lobby and fetch points
+                document.getElementById('lobbyContent').style.display = 'block';
+                document.getElementById('userName').innerText = session.user.user_metadata.full_name;
+                
+                const res = await fetch('/auth/google-sync', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: session.user.email, name: session.user.user_metadata.full_name })
+                });
+                const data = await res.json();
+                document.getElementById('userXP').innerText = data.points || 0;
+            }
+        }
+
+        async function logout() {
+            await _supabase.auth.signOut();
+            window.location.href = '/index.html';
+        }
+
+        checkUser();
+    </script>
+</body>
+</html>
+
